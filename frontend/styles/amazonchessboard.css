@@ -1,0 +1,25 @@
+#amazonchessboard {
+  width: 500px;
+  height: 500px;
+  display: flex;
+  flex-wrap: wrap;
+  margin: 20px auto;
+  border: 4px solid #444;
+}
+.square {
+  box-sizing: border-box;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-family: monospace;
+  cursor: pointer;
+}
+.square[data-color="dark"] { background:#222; color:#fff; }
+.square[data-color="light"] { background:#eee; color:#000; }
+.piece[data-piece="A"][data-color="white"] { color:#ff9800; }
+.piece[data-piece="A"][data-color="black"] { color:#ffc107; }
+.piece { user-select:none; }

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "default",
+    "pieces": [
+      {
+        "col": 0,
+        "row": 3,
+        "user": 1
+      },
+      {
+        "col": 0,
+        "row": 6,
+        "user": 1
+      },
+      {
+        "col": 3,
+        "row": 0,
+        "user": 1
+      },
+      {
+        "col": 3,
+        "row": 9,
+        "user": 1
+      },
+      {
+        "col": 6,
+        "row": 0,
+        "user": 0
+      },
+      {
+        "col": 6,
+        "row": 9,
+        "user": 0
+      },
+      {
+        "col": 9,
+        "row": 3,
+        "user": 0
+      },
+      {
+        "col": 9,
+        "row": 6,
+        "user": 0
+      }
+    ],
+    "moves": []
+  }
+]
