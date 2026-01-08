@@ -195,3 +195,26 @@ Board.addEventListener('click', async (e) => {
         blockmode = false;
     }
 });
+
+document.getElementById('undo-btn').onclick = async () => {
+    try {
+        const response = await fetch(`${API_URL}/move/undo/${FileID}`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            // 使用后端返回的数据重新渲染棋盘
+            Setboard(result.pieces, result.blocks, result.currentPlayer);
+            // 重置前端交互状态
+            selectedpiece = null;
+            movemode = false;
+            Clearhighlights();
+            console.log("悔棋成功");
+        } else {
+            alert(result.message);
+        }
+    } catch (error) {
+        console.error("悔棋请求失败:", error);
+    }
+};

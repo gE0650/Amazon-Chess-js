@@ -6,5 +6,6 @@ router.post('/:fileid', Movecontroller.Movepiece);
 
 // 对应前端 fetch(`${API_URL}/move/block/${FileID}`)
 router.post("/block/:fileid", Movecontroller.PlaceBlock);
+router.post('/undo/:fileid', Movecontroller.UndoMove);
 
 module.exports = router;

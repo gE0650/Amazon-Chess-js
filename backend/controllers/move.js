@@ -125,6 +125,7 @@ exports.Movepiece = (req, res) => {
 		return res.status(400).json({ success: false, message: "路径被阻挡" });
 	}
 
+	
 	// 更新棋子位置
 	pieces[idx] = { ...pieces[idx], col: newcol, row: newrow };
 
@@ -153,19 +154,38 @@ exports.PlaceBlock = (req, res) => {
     const board = boards.find((b) => b.id === fileID);
     if (!board) return res.status(404).json({ success: false, message: "棋盘不存在" });
 
-    const pieces = board.pieces || [];
-    const blocks = board.blocks || [];
+	board.pieces = board.pieces || [];
+    board.blocks = board.blocks || [];
+    board.history = board.history || [];
+
+	const pieces = board.pieces; // 定义 pieces 变量
+    const blocks = board.blocks; // 定义 blocks 变量
 
     // 检查目标点是否为空
     const isOccupied = [...pieces, ...blocks].some(p => p.col === col && p.row === row);
     if (isOccupied || !inBounds(col, row)) {
+		board.history.pop();
         return res.status(400).json({ success: false, message: "该位置不可放置障碍" });
     }
+
+	board.history = board.history || [];
+    const snapshot = {
+        pieces: JSON.parse(JSON.stringify(board.pieces)),
+        blocks: JSON.parse(JSON.stringify(board.blocks)),
+        currentPlayer: board.currentPlayer, // 保持为当前正在射箭的人
+        status: board.status,
+        winner: board.winner
+    };
+    board.history.push(snapshot);
+
 
     blocks.push({ col, row });
     board.blocks = blocks;
     board.moves = board.moves || [];
     board.moves.push({ type: 'block', to: { col, row }, ts: Date.now() });
+
+
+	
 
 	board.currentPlayer = board.currentPlayer === 1 ? 0 : 1;
 
@@ -189,6 +209,8 @@ exports.PlaceBlock = (req, res) => {
         board.status = "finished";
 		board.winner = winner;
     }
+	
+
 	writeChessboards(boards);
 
     return res.json({ 
@@ -197,5 +219,43 @@ exports.PlaceBlock = (req, res) => {
         blocks: board.blocks, 
         currentPlayer: board.currentPlayer,
 		winner: winner
+    });
+};
+
+exports.UndoMove = (req, res) => {
+    const fileID = req.params.fileid;
+    const boards = readChessboards();
+    const board = boards.find(c => c.id === fileID);
+
+    if (!board || !board.history || board.history.length <= 1) {
+        return res.status(400).json({ success: false, message: "已经回到游戏开始了" });
+    }
+
+	const lastMove = board.moves[board.moves.length - 1];
+    if (lastMove && lastMove.type !== 'block') {
+        return res.status(400).json({ 
+            success: false, 
+            message: "请先完成当前回合的射箭操作后再悔棋" 
+        });
+    }
+	
+    // 弹出最近的一次快照
+    board.history.pop();
+
+	const prevState = board.history[board.history.length - 1];
+    
+    // 使用 JSON 拷贝防止引用干扰
+    board.pieces = JSON.parse(JSON.stringify(prevState.pieces));
+    board.blocks = JSON.parse(JSON.stringify(prevState.blocks));
+    board.currentPlayer = prevState.currentPlayer;
+    board.status = prevState.status || "playing";
+    board.winner = prevState.winner || null;
+
+    writeChessboards(boards);
+    res.json({ 
+        success: true, 
+        pieces: board.pieces, 
+        blocks: board.blocks, 
+        currentPlayer: board.currentPlayer 
     });
 };
