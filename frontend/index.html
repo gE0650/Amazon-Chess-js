@@ -9,11 +9,18 @@
   </head>
   <body>
     <div id="navbar"></div>
-    <div id="preview"></div>
-    <div class="preblock">block</div>
-    <a href="./pages/chessboard.html">chessboard</a>
-
+    <div class="create-zone">
+        <input type="text" id="new-id-input" placeholder="输入新游戏 ID (如: user123)">
+        <button id="start-new-btn">新建并进入</button>
+    </div>
+    <section class="container">
+      <h2>已有棋盘存档</h2>
+      <div id="save-list">
+        <p>正在加载存档...</p>
+      </div>
+    </section>
     
     <!--<script src="main.js"></script>-->
+    <script src="./scripts/index_temp.js" type="module"></script>
   </body>
 </html>
