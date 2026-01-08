@@ -36,3 +36,15 @@
     outline: 3px solid rgba(255, 200, 30, 0.9);
     outline-offset: -10px;
 }
+
+/* 障碍物（箭矢）样式 */
+.square.blocker {
+    background-color: #114514 ; /* 深灰色，确保在纯黑格子上也能看出一丁点区别 */
+    background-image: 
+        radial-gradient(circle, #66ab6a 20%, transparent 11%),
+        radial-gradient(circle, #66ab6a 20%, transparent 11%);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px; /* 添加简单的点状纹理，模拟“被箭射中”的效果 */
+    
+    cursor: not-allowed; /* 障碍物位置不可点击 */
+}

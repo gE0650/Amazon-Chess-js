@@ -1,4 +1,4 @@
-import { GetAmazons, GetBlockers } from './chessboard.js';
+import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL } from './chessboard.js';
 
 const Board = document.getElementById('chessboard'); // getElementById 不用加点
 
@@ -43,7 +43,59 @@ function Getmoves(col, row) { //返回坐标
     return moves;
 }
 
-Board.addEventListener('click', (e) => {
+async function PlaceBlock(col, row) {
+    try {
+        // 路径对应 router 里的 /block/:fileid
+        const response = await fetch(`${API_URL}/move/block/${FileID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ col, row }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // 同步后端返回的最新的 pieces 和 blocks 到本地变量
+            Setboard(data.pieces, data.blocks, data.currentPlayer);
+            return true;
+        } else {
+            alert(data.message); // 弹出“位置已被占用”等错误
+            return false;
+        }
+    } catch (e) {
+        console.error('射箭同步失败', e);
+        return false;
+    }
+}
+
+async function Movepiece(piece, newcol, newrow) {
+    try {
+        const response = await fetch(`${API_URL}/move/${FileID}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                piece: {
+                    row: piece.row,
+                    col: piece.col,
+                },
+                newrow: newrow,
+                newcol: newcol,
+            }),
+        });
+        const data = await response.json();
+        if(data.success) {
+            Setboard(data.pieces, data.blocks, data.currentPlayer);
+        }
+        else {
+            console.error('渲染棋盘出错');
+        }
+    } catch(e) {
+        console.error('请求移动出错');
+    }
+}
+
+Board.addEventListener('click', async (e) => {
     const square = e.target.closest('.square');
     if (!square) return;
 
@@ -51,17 +103,38 @@ Board.addEventListener('click', (e) => {
     const col = parseInt(square.dataset.col, 10);
     console.log(`检测到点击: ${row}, ${col}`);
 
+    
+
     if (blockmode) {
         if (!square.classList.contains('highlight')) return;
-        square.classList.add('blocker');
-        Clearhighlights();
-        blockmode = false;
-        selectedpiece = null;
+
+        const success = await PlaceBlock(col, row);
+
+        if (success) {
+            // 3. 后端同步成功后，更新 UI 表现
+            square.classList.add('blocker');
+        
+            // 4. 重置状态，准备进入下一个玩家的回合
+            Clearhighlights();
+            blockmode = false;
+            selectedpiece = null;
+            
+            console.log("射箭成功，回合结束");
+            
+            // 建议：在这里调用一个全局渲染函数（如 RenderAll），
+            // 确保棋盘上所有棋子和障碍物的位置与后端返回的数据完全一致。
+        } else {
+            console.error("射箭失败，请重试");
+        }
         return;
     }
 
     if (movemode) {
         if (!square.classList.contains('highlight')) return;
+
+        const newCol = col;
+        const newRow = row;
+        await Movepiece(selectedpiece, newCol, newRow);
 
         selectedpiece.col = col;
         selectedpiece.row = row;
@@ -85,6 +158,11 @@ Board.addEventListener('click', (e) => {
     }
 
     const target = Getpieceat(col, row);
+    if (target.user !== GetCurrentPlayer()) {
+        console.warn("这不是你的棋子，请等待对方行动");
+        return;
+    }
+    
     if (target) {
         Clearhighlights();
         selectedpiece = target;

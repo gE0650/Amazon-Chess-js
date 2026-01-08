@@ -2,17 +2,24 @@
 import './chessboardaction.js';
 const Template = document.getElementById("chessboxtemplate");
 const Container = document.getElementById("chessboard");
-const API_URL = "http://localhost:3000";
+export const API_URL = "http://localhost:3000";
 const params = new URLSearchParams(window.location.search);
-const FileID = params.get('fileid') || 'default';
+export const FileID = params.get('fileid') || 'default';
 
 let amazons = [];   // 存后端返回的pieces数组
 let blockers = [];  // 存障碍物坐标
+let currentPlayer = 1; // 默认为玩家 1
 
 //给actions用的函数
-export function Setboard(pieces, blocks = []) {
+export function Setboard(pieces, blocks = [], newPlayer) {
     amazons = pieces || [];
     blockers = blocks || [];
+    if (newPlayer !== undefined) currentPlayer = newPlayer; // 更新当前回合
+    RenderAll(); // 只要数据变了，就重新渲染 UI
+}
+
+export function GetCurrentPlayer() {
+    return currentPlayer;
 }
 
 export function GetAmazons() {
@@ -31,7 +38,7 @@ async function Loadboard() {
         const res = await fetch(`${API_URL}/search/${FileID}`);
         if (res.ok) {
             const board = await res.json();
-            Renderpieces(board.pieces);
+            Setboard(board.pieces, board.blocks, board.currentPlayer);
         } else if (res.status === 404) {
             const res2 = await fetch(
                 `${API_URL}/create/${FileID}`,{ method: 'POST' }
@@ -76,4 +83,31 @@ function Renderpieces(pieces) {
 
     // 渲染完成后，同步数据给 action 层
     Setboard(pieces, []);
+}
+
+export function RenderAll() {
+    // 1. 获取所有格子
+    const allSquares = Container.querySelectorAll('.square');
+
+    allSquares.forEach(square => {
+        const row = parseInt(square.dataset.row);
+        const col = parseInt(square.dataset.col);
+        const pieceElem = square.querySelector('.piece');
+
+        // 2. 清除当前格子的状态
+        pieceElem.dataset.user = ""; // 移除棋子
+        square.classList.remove('blocker'); // 移除障碍样式
+
+        // 3. 检查是否应有棋子
+        const p = amazons.find(a => a.row === row && a.col === col);
+        if (p) {
+            pieceElem.dataset.user = p.user;
+        }
+
+        // 4. 检查是否应有障碍物
+        const b = blockers.find(blk => blk.row === row && blk.col === col);
+        if (b) {
+            square.classList.add('blocker');
+        }
+    });
 }
