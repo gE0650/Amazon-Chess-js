@@ -24,6 +24,9 @@ function WriteChessboard(data) {
 function Initialboard(fileID) {
   return {
     id: fileID,
+    currentPlayer: 1,
+    status: "playing", // 初始状态为进行中
+    winner: null,      // 初始无胜者
     pieces: [ //color: 需要和前端一致
       {col:0, row:3, user:1},
       {col:0, row:6, user:1},

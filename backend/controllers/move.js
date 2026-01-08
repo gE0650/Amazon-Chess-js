@@ -56,6 +56,22 @@ function pathClear(from, to, pieces, blocks) {
 	return true;
 }
 
+function canPlayerMove(player, pieces, blocks) {
+    const playerPieces = pieces.filter(p => p.user === player);
+    const dirs = [[1,1],[1,0],[1,-1],[0,1],[0,-1],[-1,1],[-1,0],[-1,-1]];
+    const occupied = new Set();
+    pieces.forEach(p => occupied.add(`${p.col},${p.row}`));
+    (blocks || []).forEach(b => occupied.add(`${b.col},${b.row}`));
+
+    for (const piece of playerPieces) {
+        for (const [dc, dr] of dirs) {
+            const nc = piece.col + dc, nr = piece.row + dr;
+            if (inBounds(nc, nr) && !occupied.has(`${nc},${nr}`)) return true;
+        }
+    }
+    return false;
+}
+
 exports.Movepiece = (req, res) => {
 	const fileID = req.params.fileid || "default";
 	const { piece, newrow, newcol } = req.body || {};
@@ -80,6 +96,10 @@ exports.Movepiece = (req, res) => {
 		return res.status(404).json({ success: false, message: "棋盘不存在" });
 	}
 
+	if (board.status === "finished") {
+        return res.status(400).json({ success: false, message: "游戏已结束，不可移动" });
+    }
+	
 	const pieces = Array.isArray(board.pieces) ? board.pieces : [];
 	const blocks = Array.isArray(board.blocks) ? board.blocks : [];
 
@@ -150,10 +170,32 @@ exports.PlaceBlock = (req, res) => {
 	board.currentPlayer = board.currentPlayer === 1 ? 0 : 1;
 
     writeChessboards(boards);
+
+	const nextPlayer = board.currentPlayer === 1 ? 0 : 1;
+	const canNextPlayerMove = canPlayerMove(nextPlayer, pieces, blocks);
+    // 检查当前人（自己）在这一箭之后还能不能动
+    const canCurrentPlayerMove = canPlayerMove(board.currentPlayer, pieces, blocks);
+    
+    let winner = null;
+
+    if (!canNextPlayerMove) {
+        // 情况 A: 对手被围死，当前玩家获胜
+        winner = board.currentPlayer;
+        board.status = "finished";
+		board.winner = winner;
+    } else if (!canCurrentPlayerMove) {
+        // 情况 B: 自己把自己围死了（自杀），对手获胜
+        winner = nextPlayer;
+        board.status = "finished";
+		board.winner = winner;
+    }
+	writeChessboards(boards);
+
     return res.json({ 
         success: true, 
         pieces: board.pieces, 
         blocks: board.blocks, 
-        currentPlayer: board.currentPlayer 
+        currentPlayer: board.currentPlayer,
+		winner: winner
     });
 };

@@ -9,12 +9,14 @@ export const FileID = params.get('fileid') || 'default';
 let amazons = [];   // 存后端返回的pieces数组
 let blockers = [];  // 存障碍物坐标
 let currentPlayer = 1; // 默认为玩家 1
+export let winner = null;
 
 //给actions用的函数
-export function Setboard(pieces, blocks = [], newPlayer) {
+export function Setboard(pieces, blocks = [], newPlayer, serverWinner = null) {
     amazons = pieces || [];
     blockers = blocks || [];
     if (newPlayer !== undefined) currentPlayer = newPlayer; // 更新当前回合
+    winner = serverWinner;
     RenderAll(); // 只要数据变了，就重新渲染 UI
 }
 
@@ -38,14 +40,15 @@ async function Loadboard() {
         const res = await fetch(`${API_URL}/search/${FileID}`);
         if (res.ok) {
             const board = await res.json();
-            Setboard(board.pieces, board.blocks, board.currentPlayer);
+            Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner);
         } else if (res.status === 404) {
             const res2 = await fetch(
                 `${API_URL}/create/${FileID}`,{ method: 'POST' }
             );
             if (res2.ok) {
                 const board = await res2.json();
-                Renderpieces(board.pieces);
+                //Renderpieces(board.pieces);
+                Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner);
             }
         }
     } catch (e) {
@@ -110,4 +113,16 @@ export function RenderAll() {
             square.classList.add('blocker');
         }
     });
+
+    // 在 RenderAll 函数的最后面添加
+    const statusBar = document.getElementById('status-bar');
+    if (statusBar) {
+        if (winner !== null && winner !== undefined) {
+            statusBar.textContent = `游戏结束！获胜者：玩家 ${winner === 1 ? '1 (红)' : '0 (蓝)'}`;
+            statusBar.style.color = "red";
+        } else {
+            statusBar.textContent = `当前回合：玩家 ${currentPlayer === 1 ? '1 (红)' : '0 (蓝)'}`;
+            statusBar.style.color = "black";
+        }
+    }
 }

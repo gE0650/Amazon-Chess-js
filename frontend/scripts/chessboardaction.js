@@ -1,4 +1,4 @@
-import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL } from './chessboard.js';
+import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL, winner } from './chessboard.js';
 
 const Board = document.getElementById('chessboard'); // getElementById 不用加点
 
@@ -56,6 +56,13 @@ async function PlaceBlock(col, row) {
         if (data.success) {
             // 同步后端返回的最新的 pieces 和 blocks 到本地变量
             Setboard(data.pieces, data.blocks, data.currentPlayer);
+
+            if (data.winner !== null && data.winner !== undefined) {
+                setTimeout(() => {
+                    alert(`游戏结束！玩家 ${data.winner === 1 ? '1 (红)' : '0 (蓝)'} 获胜！`);
+                }, 100);
+            }
+
             return true;
         } else {
             alert(data.message); // 弹出“位置已被占用”等错误
@@ -96,6 +103,11 @@ async function Movepiece(piece, newcol, newrow) {
 }
 
 Board.addEventListener('click', async (e) => {
+    if (winner !== null && winner !== undefined) {
+        console.log("游戏已结束，操作已锁定");
+        return;
+    }
+
     const square = e.target.closest('.square');
     if (!square) return;
 
