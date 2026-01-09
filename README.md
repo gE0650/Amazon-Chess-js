@@ -1,4 +1,4 @@
-# Achess & Amazon Chess Variant
+# Amazon Chess 
 
 ## 安装依赖
 
