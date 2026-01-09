@@ -28,9 +28,9 @@ function isLineMove(from, to) {
 	const dr = to.row - from.row;
 	const dc = to.col - from.col;
 	if (dr === 0 && dc === 0) return false;
-	if (dr === 0) return true; // 同行
-	if (dc === 0) return true; // 同列
-	return Math.abs(dr) === Math.abs(dc); // 斜线
+	if (dr === 0) return true;
+	if (dc === 0) return true;
+	return Math.abs(dr) === Math.abs(dc);
 }
 
 function pathClear(from, to, pieces, blocks) {
@@ -46,13 +46,12 @@ function pathClear(from, to, pieces, blocks) {
 	pieces.forEach((p) => occupied.add(`${p.col},${p.row}`));
 	(blocks || []).forEach((b) => occupied.add(`${b.col},${b.row}`));
 
-	// 途中不允许有子/障碍，终点不允许被占据
 	while (r !== to.row || c !== to.col) {
 		if (occupied.has(`${c},${r}`)) return false;
 		r += stepR;
 		c += stepC;
 	}
-	// 终点占据检查
+	
 	if (occupied.has(`${to.col},${to.row}`)) return false;
 	return true;
 }
@@ -78,19 +77,17 @@ function validateAIMove(board, aiAction) {
     const pieces = board.pieces;
     const blocks = board.blocks;
 
-    // 1. 基本坐标范围校验
+    // 基本坐标范围校验
     const isOutOfBounds = (c, r) => c < 0 || c > 9 || r < 0 || r > 9;
     if (isOutOfBounds(move.col, move.row) || isOutOfBounds(arrow.col, arrow.row)) return false;
 
-    // 2. 验证移动是否合法 (复用你原本写在前端或后端的校验函数)
-    // 假设你已经有 isLineMove(from, to) 和 pathClear(from, to, pieces, blocks)
+    // 验证移动是否合法
     if (!isLineMove(piece, move) || !pathClear(piece, move, pieces, blocks)) {
         console.error("AI 尝试了非法的棋子移动");
         return false;
     }
 
-    // 3. 验证射箭是否合法
-    // 注意：此时棋子已经到了 move 位置，校验射箭路径时要考虑新位置
+    // 验证射箭是否合法
     const tempPieces = pieces.map(p => 
         (p.col === piece.col && p.row === piece.row) ? { ...p, col: move.col, row: move.row } : p
     );
@@ -148,21 +145,21 @@ exports.Movepiece = (req, res) => {
 		typeof newcol !== "number" ||
 		typeof newrow !== "number"
 	) {
-		return res.status(400).json({ success: false, message: "参数不完整" });
+		return res.status(400).json({ success: false, message: "Err: 参数不完整" });
 	}
 
 	if (!inBounds(piece.col, piece.row) || !inBounds(newcol, newrow)) {
-		return res.status(400).json({ success: false, message: "坐标越界" });
+		return res.status(400).json({ success: false, message: "Err: 坐标越界" });
 	}
 
 	const boards = readChessboards();
 	const board = boards.find((b) => b.id === fileID);
 	if (!board) {
-		return res.status(404).json({ success: false, message: "棋盘不存在" });
+		return res.status(404).json({ success: false, message: "Err: 棋盘不存在" });
 	}
 
 	if (board.status === "finished") {
-        return res.status(400).json({ success: false, message: "游戏已结束，不可移动" });
+        return res.status(400).json({ success: false, message: "Err: 游戏已结束，不可移动" });
     }
 	
 	const pieces = Array.isArray(board.pieces) ? board.pieces : [];
@@ -172,22 +169,22 @@ exports.Movepiece = (req, res) => {
 		(p) => p.col === piece.col && p.row === piece.row
 	);
 	if (idx === -1) {
-		return res.status(400).json({ success: false, message: "未找到该棋子" });
+		return res.status(400).json({ success: false, message: "Err: 未找到该棋子" });
 	}
 
 	if (pieces[idx].user !== board.currentPlayer) {
-        return res.status(403).json({ success: false, message: "不是你的回合" });
+        return res.status(403).json({ success: false, message: "Err: 不是你的回合" });
     }
 
 	const from = { col: piece.col, row: piece.row };
 	const to = { col: newcol, row: newrow };
 
 	if (!isLineMove(from, to)) {
-		return res.status(400).json({ success: false, message: "非法走法" });
+		return res.status(400).json({ success: false, message: "Err: 非法走法" });
 	}
 
 	if (!pathClear(from, to, pieces, blocks)) {
-		return res.status(400).json({ success: false, message: "路径被阻挡" });
+		return res.status(400).json({ success: false, message: "Err: 路径被阻挡" });
 	}
 
 	
@@ -200,7 +197,6 @@ exports.Movepiece = (req, res) => {
 	board.pieces = pieces;
 	board.moves = moves;
 
-	// blocks 目前前端未落子提交，这里保持为空或现有
 	writeChessboards(boards);
 
 	return res.json({ success: true, pieces, blocks: blocks || [] });
@@ -255,31 +251,30 @@ exports.PlaceBlock = async (req, res) => {
 
 	const nextPlayer = board.currentPlayer === 1 ? 0 : 1;
 	const canNextPlayerMove = canPlayerMove(nextPlayer, pieces, blocks);
-    // 检查当前人（自己）在这一箭之后还能不能动
     const canCurrentPlayerMove = canPlayerMove(board.currentPlayer, pieces, blocks);
     
     let winner = null;
 
     if (!canNextPlayerMove) {
-        // 情况 A: 对手被围死，当前玩家获胜
+        // 对手被围死，当前玩家获胜
         winner = board.currentPlayer;
         board.status = "finished";
 		board.winner = winner;
     } else if (!canCurrentPlayerMove) {
-        // 情况 B: 自己把自己围死了（自杀），对手获胜
+        // 自己把自己围死了（自杀），对手获胜
         winner = nextPlayer;
         board.status = "finished";
 		board.winner = winner;
     }
 	
-	
+	// AI, 启动!
 	if (board.mode === 'pve' && board.currentPlayer === 0 && board.status !== "finished") {
         
 		console.log("正在请求 DeepSeek AI 决策...");
         let aiAction = null;
     	let isValid = false;
     	let attempts = 0;
-    	const MAX_ATTEMPTS = 2; // 如果失败尝试重试一次
+    	const MAX_ATTEMPTS = 3; // 如果失败尝试重试几次
 
     	while (attempts < MAX_ATTEMPTS && !isValid) {
     	    attempts++;
@@ -308,7 +303,7 @@ exports.PlaceBlock = async (req, res) => {
     	        console.log("AI 走子完成");
     	    }
     	} else {
-    	    // --- 核心保底：如果AI实在不行，随机走一步 ---
+    	    // 如果AI实在不行，随机走一步
     	    console.error("AI 决策多次失败，执行随机保底移动");
     	    const fallback = generateRandomValidMove(board);
     	    if (fallback) {
@@ -326,12 +321,12 @@ exports.PlaceBlock = async (req, res) => {
     }
 
 	if (!canNextPlayerMove) {
-        	// 情况 A: 对手被围死，当前玩家获胜
+        	// 对手被围死，当前玩家获胜
         	winner = board.currentPlayer;
     	    board.status = "finished";
 			board.winner = winner;
     } else if (!canCurrentPlayerMove) {
-        // 情况 B: 自己把自己围死了（自杀），对手获胜
+        // 自己把自己围死了（自杀），对手获胜
         winner = nextPlayer;
         board.status = "finished";
 		board.winner = winner;
@@ -370,7 +365,7 @@ exports.UndoMove = (req, res) => {
 
 	const prevState = board.history[board.history.length - 1];
     
-    // 使用 JSON 拷贝防止引用干扰
+    // 拷贝而非引用
     board.pieces = JSON.parse(JSON.stringify(prevState.pieces));
     board.blocks = JSON.parse(JSON.stringify(prevState.blocks));
     board.currentPlayer = prevState.currentPlayer;
@@ -389,9 +384,9 @@ exports.UndoMove = (req, res) => {
 
 
 async function getDeepSeekMove(board) {
-    const API_KEY = "sk-377ebb2cc7704949915e4a1ad86327ed"; // 替换为你的 API Key
+    const API_KEY = "喵喵喵"; // 替换为你的 API Key
     
-    // 1. 准备棋盘描述：只提供坐标，减少 Token 消耗
+    // 准备棋盘描述
     const playerPieces = board.pieces.filter(p => p.user === 1).map(p => `(${p.col},${p.row})`).join(' ');
     const aiPieces = board.pieces.filter(p => p.user === 0).map(p => `(${p.col},${p.row})`).join(' ');
     const blocks = board.blocks.map(b => `(${b.col},${b.row})`).join(' ');
@@ -442,15 +437,12 @@ async function getDeepSeekMove(board) {
                 }
             ],
 			temperature: 0.1,
-			max_tokens: model === "deepseek-reasoner" ? 1500 : 500 // 给Reasoner留够思考空间
-            // 2. 注意：Reasoner 模型目前可能不支持 response_format: { type: "json_object" }
-            // 建议去掉该配置，改为在 prompt 中强行要求 JSON，或者增加后处理逻辑
-        }, {
+			max_tokens: 500,
             headers: { 'Authorization': `Bearer ${API_KEY}` },
 			timeout: 60000
         });
 
-        // 3. 解析逻辑
+        // 解析逻辑
         let content = response.data.choices[0].message.content;
         
         // 如果模型返回的内容包含了 ```json ... ``` 标签，需要清洗掉

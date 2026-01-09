@@ -17,12 +17,9 @@ function Readchessboards() {
 
 function WriteChessboard(data) {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
-  //null: 全写进去
-  //2: 缩进2格
 }
 
 function Initialboard(fileID, mode) {
-  // 1. 先定义初始的棋子位置
   const initialPieces = [
     {col:0, row:3, user:1},
     {col:0, row:6, user:1},
@@ -34,7 +31,6 @@ function Initialboard(fileID, mode) {
     {col:9, row:6, user:0},
   ];
 
-  // 2. 返回完整的对象
   return {
     id: fileID,
     mode: mode,
@@ -46,9 +42,9 @@ function Initialboard(fileID, mode) {
     // 关键修改：初始化时存入“第 0 步”快照
     history: [
       {
-        pieces: JSON.parse(JSON.stringify(initialPieces)), // 深拷贝初始棋子
-        blocks: [],                                       // 初始障碍物为空
-        currentPlayer: 1,                                 // 初始是白方回合
+        pieces: JSON.parse(JSON.stringify(initialPieces)), // 拷贝而非引用
+        blocks: [],
+        currentPlayer: 1,
         status: "playing",
         winner: null
       }

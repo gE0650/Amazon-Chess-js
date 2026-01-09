@@ -3,28 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your Page Title</title>
+    <title>Amazon Chess</title>
     <link rel="stylesheet" href="./styles/index.css" />
     <link rel="stylesheet" href="./styles/general.css" />
   </head>
   <body>
-    <div id="navbar"></div>
     <div class="create-zone">
         <input type="text" id="new-id-input" placeholder="输入新游戏 ID (如: user123)">
-        <button id="start-new-btn">新建并进入</button>
+        <button id="start-new-btn">新建</button>
     </div>
     <select id="mode-select">
       <option value="pvp">双人对战</option>
-      <option value="pve">挑战 DeepSeek AI</option>
+      <option value="pve">挑战AI</option>
     </select>
     <section class="container">
-      <h2>已有棋盘存档</h2>
+      <h2>已有棋盘</h2>
       <div id="save-list">
         <p>正在加载存档...</p>
       </div>
     </section>
     
-    <!--<script src="main.js"></script>-->
-    <script src="./scripts/index_temp.js" type="module"></script>
+    <script src="./scripts/index.js" type="module"></script>
   </body>
 </html>

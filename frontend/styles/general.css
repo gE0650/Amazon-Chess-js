@@ -1,14 +1,3 @@
 body {
-    margin: 0px;
-    padding-top: 100px;
     background-color: greenyellow;
-}
-
-#navbar {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: 100px;
-    background-color: rgba(32, 32, 200, 1);
-
 }

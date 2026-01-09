@@ -9,15 +9,15 @@ export const FileID = params.get('fileid') || 'default';
 
 let amazons = [];   // 存后端返回的pieces数组
 let blockers = [];  // 存障碍物坐标
-let currentPlayer = 1; // 默认为玩家 1
+let currentPlayer = 1; // 1红 0蓝
 export let winner = null;
-export let currentMode = params.get('mode') || 'pvp'; // 初始化时直接从 URL 获取一次
+export let currentMode = params.get('mode') || 'pvp';
 
-//给actions用的函数
+// 给actions渲染后端返回数据用的函数
 export function Setboard(pieces, blocks = [], newPlayer, serverWinner = null, mode = 'pvp') {
     amazons = pieces || [];
     blockers = blocks || [];
-    if (newPlayer !== undefined) currentPlayer = newPlayer; // 更新当前回合
+    if (newPlayer !== undefined) currentPlayer = newPlayer;
     winner = serverWinner;
     currentMode = mode;
     RenderAll(); // 只要数据变了，就重新渲染 UI
@@ -92,7 +92,6 @@ function Renderpieces(pieces) {
 }*/
 
 export function RenderAll() {
-    // 1. 获取所有格子
     const allSquares = Container.querySelectorAll('.square');
 
     allSquares.forEach(square => {
@@ -100,31 +99,30 @@ export function RenderAll() {
         const col = parseInt(square.dataset.col);
         const pieceElem = square.querySelector('.piece');
 
-        // 2. 清除当前格子的状态
         pieceElem.dataset.user = ""; // 移除棋子
         square.classList.remove('blocker'); // 移除障碍样式
 
-        // 3. 检查是否应有棋子
+        // 检查是否应有棋子
         const p = amazons.find(a => a.row === row && a.col === col);
         if (p) {
             pieceElem.dataset.user = p.user;
         }
 
-        // 4. 检查是否应有障碍物
+        // 检查是否应有障碍物
         const b = blockers.find(blk => blk.row === row && blk.col === col);
         if (b) {
             square.classList.add('blocker');
         }
     });
 
-    // 在 RenderAll 函数的最后面添加
+    // 控制status bar
     const statusBar = document.getElementById('status-bar');
     if (statusBar) {
         if (winner !== null && winner !== undefined) {
-            statusBar.textContent = `游戏结束！获胜者：玩家 ${winner === 1 ? '1 (红)' : '0 (蓝)'}`;
+            statusBar.textContent = `游戏结束！获胜者：玩家 ${winner === 1 ? '红方' : '蓝方'}`;
             statusBar.style.color = "red";
         } else {
-            statusBar.textContent = `当前回合：玩家 ${currentPlayer === 1 ? '1 (红)' : '0 (蓝)'}`;
+            statusBar.textContent = `当前回合：玩家 ${currentPlayer === 1 ? '红方' : '蓝方'}`;
             statusBar.style.color = "black";
         }
     }

@@ -1,9 +1,9 @@
 import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL, winner, currentMode } from './chessboard.js';
 
-const Board = document.getElementById('chessboard'); // getElementById 不用加点
+const Board = document.getElementById('chessboard');
 
-let highlights = [];     // 存高亮格子, 而非坐标
-let selectedpiece = null; // amazons 中的一个对象
+let highlights = [];     // 类型是square元素
+let selectedpiece = null; // amazons 中的一个对象, 类型是后端返回的piece
 let movemode = false;
 let blockmode = false;
 
@@ -15,7 +15,7 @@ function Isblockedat(col, row) {
     return GetBlockers().some(p => p.row === row && p.col === col);
 }
 
-// ===== UI 工具函数 =====
+// UI 工具函数
 function Clearhighlights() {
     highlights.forEach(elem => {
         elem.classList.remove('highlight');
@@ -23,7 +23,7 @@ function Clearhighlights() {
     highlights = [];
 }
 
-function Getmoves(col, row) { //返回坐标
+function Getmoves(col, row) { // 返回类型是坐标
     // 可以走到的位置, 棋子 & 障碍均适用
     const moves = [];
     const dirs = [
@@ -59,17 +59,17 @@ async function PlaceBlock(col, row) {
 
             if (data.winner !== null && data.winner !== undefined) {
                 setTimeout(() => {
-                    alert(`游戏结束！玩家 ${data.winner === 1 ? '1 (红)' : '0 (蓝)'} 获胜！`);
+                    alert(`游戏结束！玩家 ${data.winner === 1 ? '红方' : '蓝方'} 获胜！`);
                 }, 100);
             }
 
             return true;
         } else {
-            alert(data.message); // 弹出“位置已被占用”等错误
+            alert(data.message);
             return false;
         }
     } catch (e) {
-        console.error('射箭同步失败', e);
+        console.error('射箭同步失败, 怎么回事捏', e);
         return false;
     }
 }
@@ -103,7 +103,7 @@ async function Movepiece(piece, newcol, newrow) {
 }
 
 Board.addEventListener('click', async (e) => {
-    if (winner !== null && winner !== undefined) {
+    if (winner !== null && winner !== undefined) { // 不能动了
         console.log("游戏已结束，操作已锁定");
         return;
     }
@@ -128,18 +128,16 @@ Board.addEventListener('click', async (e) => {
         const success = await PlaceBlock(col, row);
 
         if (success) {
-            // 3. 后端同步成功后，更新 UI 表现
+            // 后端同步成功后，更新 UI 表现
             square.classList.add('blocker');
         
-            // 4. 重置状态，准备进入下一个玩家的回合
+            // 重置状态，准备进入下一个玩家的回合
             Clearhighlights();
             blockmode = false;
             selectedpiece = null;
             
             console.log("射箭成功，回合结束");
             
-            // 建议：在这里调用一个全局渲染函数（如 RenderAll），
-            // 确保棋盘上所有棋子和障碍物的位置与后端返回的数据完全一致。
         } else {
             console.error("射箭失败，请重试");
         }
@@ -202,6 +200,7 @@ Board.addEventListener('click', async (e) => {
 });
 
 document.getElementById('undo-btn').onclick = async () => {
+    if (blockmode) return; // 走了"半步"
     try {
         const response = await fetch(`${API_URL}/move/undo/${FileID}`, {
             method: 'POST'
@@ -211,7 +210,7 @@ document.getElementById('undo-btn').onclick = async () => {
         if (result.success) {
             // 使用后端返回的数据重新渲染棋盘
             Setboard(result.pieces, result.blocks, result.currentPlayer);
-            // 重置前端交互状态
+            
             selectedpiece = null;
             movemode = false;
             Clearhighlights();

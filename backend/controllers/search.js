@@ -1,4 +1,3 @@
-const EventEmitter = require("events");
 const fs = require("fs");
 const path = require("path");
 
@@ -13,7 +12,7 @@ function Readchessboards() {
   try {
     return JSON.parse(data);
   }
-  catch { //可能Json损坏
+  catch { // 可能Json损坏
     console.log('文件路径对了, 但找不到文件');
     return [];
   }
@@ -24,13 +23,12 @@ exports.Getchessboard = (req, res) => {
   const chessboards = Readchessboards();
   const chessboard = chessboards.find(c => c.id === fileID);
   if(chessboard) res.json(chessboard);
-  //equal to
-  //res.setHeader("Content-Type", "application/json");
-  //res.send(JSON.stringify(chessboard));
+  // 等价于:
+  // res.setHeader("Content-Type", "application/json");
+  // res.send(JSON.stringify(chessboard));
 
   else res.status(404).json({});
 };
-// export需要加;
 
 exports.Listchessboards = (req, res) => {
   const chessboards = Readchessboards();

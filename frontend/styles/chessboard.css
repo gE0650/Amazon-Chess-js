@@ -37,14 +37,83 @@
     outline-offset: -10px;
 }
 
-/* 障碍物（箭矢）样式 */
 .square.blocker {
     background-color: #114514 ; /*吉利的数字*/
     background-image: 
         radial-gradient(circle, #66ab6a 20%, transparent 11%),
         radial-gradient(circle, #66ab6a 20%, transparent 11%);
     background-size: 10px 10px;
-    background-position: 0 0, 5px 5px; /* 添加简单的点状纹理，模拟“被箭射中”的效果 */
-    
-    cursor: not-allowed; /* 障碍物位置不可点击 */
+    background-position: 0 0, 5px 5px; /*添加简单的点状纹理*/
+}
+
+/* 状态条美化 */
+#status-bar {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 20px auto !important;
+    max-width: 600px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    color: #333;
+    font-size: 1.1em;
+}
+
+/* 控制区域容器 */
+#controls {
+    display: flex;
+    justify-content: flex-start; /* 保持左对齐 */
+    gap: 15px;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+}
+
+/* 按钮通用基础样式 */
+#controls button, #undo-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* “返回存档列表”按钮：次要操作，使用中性色或幽灵按钮风格 */
+#controls button {
+    background-color: #6c757d;
+    color: white;
+}
+
+#controls button:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* “悔棋”按钮：特殊操作，使用强调色 */
+#undo-btn {
+    display: block; /* 维持块级或者根据需要放入 controls */
+    margin: 10px 20px 20px 20px; /* 左对齐 */
+    background-color: #ffc107; /* 警告黄，代表撤回操作 */
+    color: #212529;
+}
+
+#undo-btn:hover {
+    background-color: #e0a800;
+    transform: translateY(-1px);
+}
+
+#undo-btn:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* 棋盘容器稍微加点间距 */
+#chessboard {
+    border: 4px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
