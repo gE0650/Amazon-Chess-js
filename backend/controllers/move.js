@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const axios = require('axios');
 
 const dataPath = path.join(__dirname, "../data/chessboards.json");
 
@@ -142,7 +143,7 @@ exports.Movepiece = (req, res) => {
 };
 
 // 放置障碍物（射箭）接口
-exports.PlaceBlock = (req, res) => {
+exports.PlaceBlock = async (req, res) => {
     const fileID = req.params.fileid || "default";
     const { col, row } = req.body;
 
@@ -184,9 +185,6 @@ exports.PlaceBlock = (req, res) => {
     board.moves = board.moves || [];
     board.moves.push({ type: 'block', to: { col, row }, ts: Date.now() });
 
-
-	
-
 	board.currentPlayer = board.currentPlayer === 1 ? 0 : 1;
 
     writeChessboards(boards);
@@ -210,6 +208,54 @@ exports.PlaceBlock = (req, res) => {
 		board.winner = winner;
     }
 	
+	
+	if (board.mode === 'pve' && board.currentPlayer === 0 && board.status !== "finished") {
+        
+        // --- 这里是未来接入 DeepSeek 或 贪心算法的地方 ---
+        // 逻辑伪代码：
+        // 1. let aiMove = await getDeepSeekMove(board);
+        // 2. 更新 board.pieces (AI 移动)
+        // 3. 更新 board.blocks (AI 射箭)
+        // 4. board.currentPlayer = 1; (切回人类)
+        // 5. 检查胜负
+		console.log("正在请求 DeepSeek AI 决策...");
+        const aiAction = await getDeepSeekMove(board);
+
+        if (aiAction && aiAction.piece && aiAction.move && aiAction.arrow) {
+            // A. 执行 AI 移动
+            const pIdx = board.pieces.findIndex(p => 
+                p.col === aiAction.piece.col && p.row === aiAction.piece.row && p.user === 0
+            );
+            
+            if (pIdx !== -1) {
+                // 简单的后端校验（防止AI胡说八道）
+                // 这里建议调用你之前的 pathClear 和 isLineMove
+                board.pieces[pIdx].col = aiAction.move.col;
+                board.pieces[pIdx].row = aiAction.move.row;
+                
+                // B. 执行 AI 射箭
+                board.blocks.push({ col: aiAction.arrow.col, row: aiAction.arrow.row });
+
+                // C. 切回人类玩家
+                board.currentPlayer = 1;
+                console.log("AI 走子完成");
+            }
+        } else {
+            console.error("AI 决策无效，可能需要增加兜底随机逻辑");
+        }
+
+		if (!canNextPlayerMove) {
+        	// 情况 A: 对手被围死，当前玩家获胜
+        	winner = board.currentPlayer;
+    	    board.status = "finished";
+			board.winner = winner;
+    	} else if (!canCurrentPlayerMove) {
+    	    // 情况 B: 自己把自己围死了（自杀），对手获胜
+    	    winner = nextPlayer;
+    	    board.status = "finished";
+			board.winner = winner;
+    	}
+    }
 
 	writeChessboards(boards);
 
@@ -259,3 +305,39 @@ exports.UndoMove = (req, res) => {
         currentPlayer: board.currentPlayer 
     });
 };
+
+
+
+async function getDeepSeekMove(board) {
+    const API_KEY = ""; // 替换为你的 API Key
+    
+    // 1. 准备棋盘描述：只提供坐标，减少 Token 消耗
+    const playerPieces = board.pieces.filter(p => p.user === 1).map(p => `(${p.col},${p.row})`).join(' ');
+    const aiPieces = board.pieces.filter(p => p.user === 0).map(p => `(${p.col},${p.row})`).join(' ');
+    const blocks = board.blocks.map(b => `(${b.col},${b.row})`).join(' ');
+
+    const prompt = `你是亚马逊棋高手。10x10棋盘(0-9)。
+		你的棋子(玩家0): ${aiPieces}
+		对手棋子(玩家1): ${playerPieces}
+		障碍物: ${blocks}
+		规则：移动一个你的棋子到直线空地，再从新位置向直线空地射箭。
+		要求：
+		1. 必须是直线移动且不穿过任何子或障碍。
+		2. 严格返回JSON: {"piece":{"col":x,"row":y}, "move":{"col":x,"row":y}, "arrow":{"col":x,"row":y}}
+		不要解释，只给JSON。`;
+
+    try {
+        const response = await axios.post("https://api.deepseek.com/chat/completions", {
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" } // 强制返回 JSON
+        }, {
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+
+        return JSON.parse(response.data.choices[0].message.content);
+    } catch (error) {
+        console.error("DeepSeek 调用失败:", error.message);
+        return null;
+    }
+}

@@ -1,4 +1,4 @@
-import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL, winner } from './chessboard.js';
+import { GetAmazons, GetBlockers, Setboard, FileID, GetCurrentPlayer, API_URL, winner, currentMode } from './chessboard.js';
 
 const Board = document.getElementById('chessboard'); // getElementById 不用加点
 
@@ -106,6 +106,11 @@ Board.addEventListener('click', async (e) => {
     if (winner !== null && winner !== undefined) {
         console.log("游戏已结束，操作已锁定");
         return;
+    }
+
+    if (currentMode === 'pve' && GetCurrentPlayer() === 0) {
+        console.warn("AI 正在思考中，请稍后...");
+        return; 
     }
 
     const square = e.target.closest('.square');

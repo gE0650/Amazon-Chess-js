@@ -10,13 +10,15 @@ let amazons = [];   // 存后端返回的pieces数组
 let blockers = [];  // 存障碍物坐标
 let currentPlayer = 1; // 默认为玩家 1
 export let winner = null;
+export let currentMode = 'pvp';
 
 //给actions用的函数
-export function Setboard(pieces, blocks = [], newPlayer, serverWinner = null) {
+export function Setboard(pieces, blocks = [], newPlayer, serverWinner = null, mode = 'pvp') {
     amazons = pieces || [];
     blockers = blocks || [];
     if (newPlayer !== undefined) currentPlayer = newPlayer; // 更新当前回合
     winner = serverWinner;
+    currentMode = mode;
     RenderAll(); // 只要数据变了，就重新渲染 UI
 }
 
@@ -40,15 +42,15 @@ async function Loadboard() {
         const res = await fetch(`${API_URL}/search/${FileID}`);
         if (res.ok) {
             const board = await res.json();
-            Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner);
+            Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner, board.mode);
         } else if (res.status === 404) {
             const res2 = await fetch(
-                `${API_URL}/create/${FileID}`,{ method: 'POST' }
+                `${API_URL}/create/${FileID}?mode=${currentMode}`,{ method: 'POST' }
             );
             if (res2.ok) {
                 const board = await res2.json();
                 //Renderpieces(board.pieces);
-                Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner);
+                Setboard(board.pieces, board.blocks, board.currentPlayer, board.winner, board.mode);
             }
         }
     } catch (e) {
@@ -71,7 +73,7 @@ function Buildboard() {
     }
 }
 
-
+/*旧渲染函数
 function Renderpieces(pieces) {
     pieces.forEach(p => {
         const piece = Container.querySelector(
@@ -86,7 +88,7 @@ function Renderpieces(pieces) {
 
     // 渲染完成后，同步数据给 action 层
     Setboard(pieces, []);
-}
+}*/
 
 export function RenderAll() {
     // 1. 获取所有格子

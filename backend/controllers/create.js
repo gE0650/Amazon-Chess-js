@@ -21,7 +21,7 @@ function WriteChessboard(data) {
   //2: 缩进2格
 }
 
-function Initialboard(fileID) {
+function Initialboard(fileID, mode) {
   // 1. 先定义初始的棋子位置
   const initialPieces = [
     {col:0, row:3, user:1},
@@ -37,6 +37,7 @@ function Initialboard(fileID) {
   // 2. 返回完整的对象
   return {
     id: fileID,
+    mode: mode,
     currentPlayer: 1,
     status: "playing",
     winner: null,
@@ -57,8 +58,9 @@ function Initialboard(fileID) {
 
 exports.Addchessboard = (req, res) => {
   const fileID = req.params.fileid;
+  const mode = req.query.mode || "pvp";
   const boards = Readchessboards();
-  const newboard = Initialboard(fileID);
+  const newboard = Initialboard(fileID, mode);
   boards.push(newboard);
   WriteChessboard(boards);
   console.log('add file succeed');

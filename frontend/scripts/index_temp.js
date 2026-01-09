@@ -63,10 +63,12 @@ document.addEventListener("DOMContentLoaded", loadSaves);
 
 document.getElementById('start-new-btn').onclick = () => {
     const input = document.getElementById('new-id-input');
+    const modeSelect = document.getElementById('mode-select');
     const newId = input.value.trim();
+    const selectedMode = modeSelect.value; // 获取选中的值: "pvp" 或 "pve"
     if (newId) {
         // 跳转时携带新的 fileid，后端 Loadboard 时发现不存在会自动创建
-        window.location.href = `./pages/chessboard.html?fileid=${newId}`;
+        window.location.href = `./pages/chessboard.html?fileid=${newId}&mode=${selectedMode}`;
     } else {
         alert("请输入一个存档名称");
     }
