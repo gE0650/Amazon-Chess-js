@@ -6,11 +6,12 @@ export const API_URL = "http://localhost:3000";
 const params = new URLSearchParams(window.location.search);
 export const FileID = params.get('fileid') || 'default';
 
+
 let amazons = [];   // 存后端返回的pieces数组
 let blockers = [];  // 存障碍物坐标
 let currentPlayer = 1; // 默认为玩家 1
 export let winner = null;
-export let currentMode = 'pvp';
+export let currentMode = params.get('mode') || 'pvp'; // 初始化时直接从 URL 获取一次
 
 //给actions用的函数
 export function Setboard(pieces, blocks = [], newPlayer, serverWinner = null, mode = 'pvp') {

@@ -73,6 +73,70 @@ function canPlayerMove(player, pieces, blocks) {
     return false;
 }
 
+function validateAIMove(board, aiAction) {
+    const { piece, move, arrow } = aiAction;
+    const pieces = board.pieces;
+    const blocks = board.blocks;
+
+    // 1. 基本坐标范围校验
+    const isOutOfBounds = (c, r) => c < 0 || c > 9 || r < 0 || r > 9;
+    if (isOutOfBounds(move.col, move.row) || isOutOfBounds(arrow.col, arrow.row)) return false;
+
+    // 2. 验证移动是否合法 (复用你原本写在前端或后端的校验函数)
+    // 假设你已经有 isLineMove(from, to) 和 pathClear(from, to, pieces, blocks)
+    if (!isLineMove(piece, move) || !pathClear(piece, move, pieces, blocks)) {
+        console.error("AI 尝试了非法的棋子移动");
+        return false;
+    }
+
+    // 3. 验证射箭是否合法
+    // 注意：此时棋子已经到了 move 位置，校验射箭路径时要考虑新位置
+    const tempPieces = pieces.map(p => 
+        (p.col === piece.col && p.row === piece.row) ? { ...p, col: move.col, row: move.row } : p
+    );
+    if (!isLineMove(move, arrow) || !pathClear(move, arrow, tempPieces, blocks)) {
+        console.error("AI 尝试了非法的射箭");
+        return false;
+    }
+
+    return true;
+}
+
+function generateRandomValidMove(board) {
+    const aiPieces = board.pieces.filter(p => p.user === 0);
+    // 随机打乱棋子顺序
+    aiPieces.sort(() => Math.random() - 0.5);
+
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+
+    for (let piece of aiPieces) {
+        for (let d of dirs) {
+            for (let dist = 1; dist < 10; dist++) {
+                const move = { col: piece.col + d[0]*dist, row: piece.row + d[1]*dist };
+                if (!inBounds(move.col, move.row)) break;
+                
+                // 检查移动路径
+                if (pathClear(piece, move, board.pieces, board.blocks)) {
+                    // 尝试在移动后射箭（简单尝试向四周射1步）
+                    for (let ad of dirs) {
+                        const arrow = { col: move.col + ad[0], row: move.row + ad[1] };
+                        if (inBounds(arrow.col, arrow.row)) {
+                            // 临时更新棋子位置来验证射箭路径
+                            const tempPieces = board.pieces.map(p => 
+                                (p.col === piece.col && p.row === piece.row) ? { ...p, ...move } : p
+                            );
+                            if (pathClear(move, arrow, tempPieces, board.blocks)) {
+                                return { piece: {col: piece.col, row: piece.row}, move, arrow };
+                            }
+                        }
+                    }
+                } else break;
+            }
+        }
+    }
+    return null;
+}
+
 exports.Movepiece = (req, res) => {
 	const fileID = req.params.fileid || "default";
 	const { piece, newrow, newcol } = req.body || {};
@@ -211,50 +275,66 @@ exports.PlaceBlock = async (req, res) => {
 	
 	if (board.mode === 'pve' && board.currentPlayer === 0 && board.status !== "finished") {
         
-        // --- 这里是未来接入 DeepSeek 或 贪心算法的地方 ---
-        // 逻辑伪代码：
-        // 1. let aiMove = await getDeepSeekMove(board);
-        // 2. 更新 board.pieces (AI 移动)
-        // 3. 更新 board.blocks (AI 射箭)
-        // 4. board.currentPlayer = 1; (切回人类)
-        // 5. 检查胜负
 		console.log("正在请求 DeepSeek AI 决策...");
-        const aiAction = await getDeepSeekMove(board);
+        let aiAction = null;
+    	let isValid = false;
+    	let attempts = 0;
+    	const MAX_ATTEMPTS = 2; // 如果失败尝试重试一次
 
-        if (aiAction && aiAction.piece && aiAction.move && aiAction.arrow) {
-            // A. 执行 AI 移动
-            const pIdx = board.pieces.findIndex(p => 
-                p.col === aiAction.piece.col && p.row === aiAction.piece.row && p.user === 0
-            );
-            
-            if (pIdx !== -1) {
-                // 简单的后端校验（防止AI胡说八道）
-                // 这里建议调用你之前的 pathClear 和 isLineMove
-                board.pieces[pIdx].col = aiAction.move.col;
-                board.pieces[pIdx].row = aiAction.move.row;
-                
-                // B. 执行 AI 射箭
-                board.blocks.push({ col: aiAction.arrow.col, row: aiAction.arrow.row });
+    	while (attempts < MAX_ATTEMPTS && !isValid) {
+    	    attempts++;
+    	    aiAction = await getDeepSeekMove(board);
+			
+    	    // 增加对 aiAction 为空的安全检查
+    	    if (aiAction && aiAction.piece && aiAction.move && aiAction.arrow) {
+    	        isValid = validateAIMove(board, aiAction);
+    	    }
+        
+    	    if (!isValid && attempts < MAX_ATTEMPTS) {
+    	        console.warn(`第 ${attempts} 次尝试失败，正在重试...`);
+    	    }
+    	}
 
-                // C. 切回人类玩家
-                board.currentPlayer = 1;
-                console.log("AI 走子完成");
-            }
-        } else {
-            console.error("AI 决策无效，可能需要增加兜底随机逻辑");
-        }
+    	// 执行阶段
+    	if (isValid) {
+    	    const pIdx = board.pieces.findIndex(p => 
+    	        p.col === aiAction.piece.col && p.row === aiAction.piece.row && p.user === 0
+    	    );
+     	    if (pIdx !== -1) {
+    	        board.pieces[pIdx].col = aiAction.move.col;
+    	        board.pieces[pIdx].row = aiAction.move.row;
+    	        board.blocks.push({ col: aiAction.arrow.col, row: aiAction.arrow.row });
+    	        board.currentPlayer = 1; // 只有成功才切回玩家
+    	        console.log("AI 走子完成");
+    	    }
+    	} else {
+    	    // --- 核心保底：如果AI实在不行，随机走一步 ---
+    	    console.error("AI 决策多次失败，执行随机保底移动");
+    	    const fallback = generateRandomValidMove(board);
+    	    if (fallback) {
+    	        const pIdx = board.pieces.findIndex(p => 
+    	            p.col === fallback.piece.col && p.row === fallback.piece.row
+    	        );
+    	        board.pieces[pIdx].col = fallback.move.col;
+   	            board.pieces[pIdx].row = fallback.move.row;
+    	        board.blocks.push(fallback.arrow);
+    	        board.currentPlayer = 1;
+    	    }
+    	} 
 
-		if (!canNextPlayerMove) {
+		
+    }
+
+	if (!canNextPlayerMove) {
         	// 情况 A: 对手被围死，当前玩家获胜
         	winner = board.currentPlayer;
     	    board.status = "finished";
 			board.winner = winner;
-    	} else if (!canCurrentPlayerMove) {
-    	    // 情况 B: 自己把自己围死了（自杀），对手获胜
-    	    winner = nextPlayer;
-    	    board.status = "finished";
-			board.winner = winner;
-    	}
+    } else if (!canCurrentPlayerMove) {
+        // 情况 B: 自己把自己围死了（自杀），对手获胜
+        winner = nextPlayer;
+        board.status = "finished";
+		board.winner = winner;
     }
 
 	writeChessboards(boards);
@@ -309,35 +389,79 @@ exports.UndoMove = (req, res) => {
 
 
 async function getDeepSeekMove(board) {
-    const API_KEY = ""; // 替换为你的 API Key
+    const API_KEY = "sk-377ebb2cc7704949915e4a1ad86327ed"; // 替换为你的 API Key
     
     // 1. 准备棋盘描述：只提供坐标，减少 Token 消耗
     const playerPieces = board.pieces.filter(p => p.user === 1).map(p => `(${p.col},${p.row})`).join(' ');
     const aiPieces = board.pieces.filter(p => p.user === 0).map(p => `(${p.col},${p.row})`).join(' ');
     const blocks = board.blocks.map(b => `(${b.col},${b.row})`).join(' ');
 
-    const prompt = `你是亚马逊棋高手。10x10棋盘(0-9)。
-		你的棋子(玩家0): ${aiPieces}
-		对手棋子(玩家1): ${playerPieces}
-		障碍物: ${blocks}
-		规则：移动一个你的棋子到直线空地，再从新位置向直线空地射箭。
-		要求：
-		1. 必须是直线移动且不穿过任何子或障碍。
-		2. 严格返回JSON: {"piece":{"col":x,"row":y}, "move":{"col":x,"row":y}, "arrow":{"col":x,"row":y}}
-		不要解释，只给JSON。`;
+	const prompt = `
+	# Role
+	You are a precision Game of the Amazons engine. 
+
+	# Current State (10x10 Grid)
+	- Your pieces (Player 0): ${aiPieces}
+	- Opponent (Player 1): ${playerPieces}
+	- Blocked cells: ${blocks}
+
+	# Strict Rules
+	1. Move: Select one of your pieces and move it in a straight line (horizontal, vertical, or diagonal).
+	2. Shoot: From the new position, shoot an arrow in a straight line to an empty cell.
+	3. Path Obstruction: Neither the move path nor the arrow path can jump over or land on an occupied cell (pieces or blocks).
+	4. No Pass: You MUST move and shoot.
+
+	# Logical Validation Steps (Mental Sandbox)
+	Step 1: Identify all 4 of your pieces.
+	Step 2: For each piece, list 3 possible valid moves.
+	Step 3: Check if the path to the destination is CLEAR of ${aiPieces}, ${playerPieces}, and ${blocks}.
+	Step 4: From the destination, verify a clear shooting path to a cell that is NOT the piece's original or new position.
+
+	# Execution Quality
+	- Coordinate check: abs(delta_row) == abs(delta_col) for diagonal moves.
+	- Collision check: Ensure no "jumping" over obstacles.
+
+	# Output Format (JSON ONLY)
+	{
+	  "piece": {"col": x, "row": y},
+	  "move": {"col": x, "row": y},
+	  "arrow": {"col": x, "row": y}
+	}
+	`;
 
     try {
+		/*const model = board.blocks.length < 25 ? "deepseek-chat" : "deepseek-reasoner";*/
+		const model = "deepseek-chat";
         const response = await axios.post("https://api.deepseek.com/chat/completions", {
-            model: "deepseek-chat",
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" } // 强制返回 JSON
+			
+            model: model, 
+            messages: [
+                { 
+                    role: "user", 
+                    content: prompt // Reasoner 模型建议将所有规则和数据都放在 user 消息中
+                }
+            ],
+			temperature: 0.1,
+			max_tokens: model === "deepseek-reasoner" ? 1500 : 500 // 给Reasoner留够思考空间
+            // 2. 注意：Reasoner 模型目前可能不支持 response_format: { type: "json_object" }
+            // 建议去掉该配置，改为在 prompt 中强行要求 JSON，或者增加后处理逻辑
         }, {
-            headers: { 'Authorization': `Bearer ${API_KEY}` }
+            headers: { 'Authorization': `Bearer ${API_KEY}` },
+			timeout: 60000
         });
 
-        return JSON.parse(response.data.choices[0].message.content);
+        // 3. 解析逻辑
+        let content = response.data.choices[0].message.content;
+        
+        // 如果模型返回的内容包含了 ```json ... ``` 标签，需要清洗掉
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return JSON.parse(content);
+        
     } catch (error) {
-        console.error("DeepSeek 调用失败:", error.message);
+        console.error("DeepSeek Reasoner 调用失败:", error.message);
         return null;
     }
 }
