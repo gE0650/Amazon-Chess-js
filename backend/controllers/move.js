@@ -225,7 +225,6 @@ exports.PlaceBlock = async (req, res) => {
     // 检查目标点是否为空
     const isOccupied = [...pieces, ...blocks].some(p => p.col === col && p.row === row);
     if (isOccupied || !inBounds(col, row)) {
-		board.history.pop();
         return res.status(400).json({ success: false, message: "该位置不可放置障碍" });
     }
 
@@ -274,7 +273,7 @@ exports.PlaceBlock = async (req, res) => {
         let aiAction = null;
     	let isValid = false;
     	let attempts = 0;
-    	const MAX_ATTEMPTS = 3; // 如果失败尝试重试几次
+    	const MAX_ATTEMPTS = 2; // 如果失败尝试重试几次
 
     	while (attempts < MAX_ATTEMPTS && !isValid) {
     	    attempts++;
@@ -384,7 +383,7 @@ exports.UndoMove = (req, res) => {
 
 
 async function getDeepSeekMove(board) {
-    const API_KEY = "喵喵喵"; // 替换为你的 API Key
+    const API_KEY = ""; // 替换为你的 API Key
     
     // 准备棋盘描述
     const playerPieces = board.pieces.filter(p => p.user === 1).map(p => `(${p.col},${p.row})`).join(' ');
@@ -426,21 +425,41 @@ async function getDeepSeekMove(board) {
 
     try {
 		/*const model = board.blocks.length < 25 ? "deepseek-chat" : "deepseek-reasoner";*/
-		const model = "deepseek-chat";
-        const response = await axios.post("https://api.deepseek.com/chat/completions", {
+        /*const response = await axios.post("https://api.deepseek.com/chat/completions", {
 			
-            model: model, 
+            model: "deepseek-chat", 
             messages: [
                 { 
                     role: "user", 
-                    content: prompt // Reasoner 模型建议将所有规则和数据都放在 user 消息中
+                    content: prompt
                 }
             ],
 			temperature: 0.1,
-			max_tokens: 500,
-            headers: { 'Authorization': `Bearer ${API_KEY}` },
+            headers: { 'Authorization': `Bearer ${API_KEY.trim()}` },
 			timeout: 60000
-        });
+        });*/
+        const response = await axios.post(
+            "https://api.deepseek.com/chat/completions", 
+            // 第二个参数：发送给服务器的数据 (data)
+            {
+                model: "deepseek-chat", 
+                messages: [
+                    { 
+                        role: "user", 
+                        content: prompt 
+                    }
+                ],
+                temperature: 0.1
+            }, 
+            // 第三个参数：Axios 的配置项 (config)
+            {
+                headers: { 
+                    'Authorization': `Bearer ${API_KEY.trim()}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 60000
+            }
+        );
 
         // 解析逻辑
         let content = response.data.choices[0].message.content;
@@ -453,7 +472,10 @@ async function getDeepSeekMove(board) {
         return JSON.parse(content);
         
     } catch (error) {
-        console.error("DeepSeek Reasoner 调用失败:", error.message);
+        if (error.response) {
+            console.error("DeepSeek 报错详情:", error.response.status, error.response.data);
+        }
+        console.error("DeepSeek调用失败:", error.message);
         return null;
     }
 }
