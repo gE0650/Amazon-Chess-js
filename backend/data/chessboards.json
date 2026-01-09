@@ -1,1 +1,251 @@
-[]
+[
+  {
+    "id": "aaa",
+    "currentPlayer": 1,
+    "status": "playing",
+    "winner": null,
+    "pieces": [
+      {
+        "col": 1,
+        "row": 2,
+        "user": 1
+      },
+      {
+        "col": 0,
+        "row": 6,
+        "user": 1
+      },
+      {
+        "col": 3,
+        "row": 0,
+        "user": 1
+      },
+      {
+        "col": 3,
+        "row": 9,
+        "user": 1
+      },
+      {
+        "col": 6,
+        "row": 5,
+        "user": 0
+      },
+      {
+        "col": 6,
+        "row": 9,
+        "user": 0
+      },
+      {
+        "col": 9,
+        "row": 3,
+        "user": 0
+      },
+      {
+        "col": 9,
+        "row": 6,
+        "user": 0
+      }
+    ],
+    "moves": [
+      {
+        "from": {
+          "col": 0,
+          "row": 3
+        },
+        "to": {
+          "col": 1,
+          "row": 2
+        },
+        "ts": 1767926716489
+      },
+      {
+        "type": "block",
+        "to": {
+          "col": 4,
+          "row": 5
+        },
+        "ts": 1767926717587
+      },
+      {
+        "from": {
+          "col": 6,
+          "row": 0
+        },
+        "to": {
+          "col": 6,
+          "row": 5
+        },
+        "ts": 1767926720240
+      },
+      {
+        "type": "block",
+        "to": {
+          "col": 5,
+          "row": 4
+        },
+        "ts": 1767926723495
+      }
+    ],
+    "history": [
+      {
+        "pieces": [
+          {
+            "col": 0,
+            "row": 3,
+            "user": 1
+          },
+          {
+            "col": 0,
+            "row": 6,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 0,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 9,
+            "user": 1
+          },
+          {
+            "col": 6,
+            "row": 0,
+            "user": 0
+          },
+          {
+            "col": 6,
+            "row": 9,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 3,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 6,
+            "user": 0
+          }
+        ],
+        "blocks": [],
+        "currentPlayer": 1,
+        "status": "playing",
+        "winner": null
+      },
+      {
+        "pieces": [
+          {
+            "col": 1,
+            "row": 2,
+            "user": 1
+          },
+          {
+            "col": 0,
+            "row": 6,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 0,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 9,
+            "user": 1
+          },
+          {
+            "col": 6,
+            "row": 0,
+            "user": 0
+          },
+          {
+            "col": 6,
+            "row": 9,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 3,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 6,
+            "user": 0
+          }
+        ],
+        "blocks": [],
+        "currentPlayer": 1,
+        "status": "playing",
+        "winner": null
+      },
+      {
+        "pieces": [
+          {
+            "col": 1,
+            "row": 2,
+            "user": 1
+          },
+          {
+            "col": 0,
+            "row": 6,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 0,
+            "user": 1
+          },
+          {
+            "col": 3,
+            "row": 9,
+            "user": 1
+          },
+          {
+            "col": 6,
+            "row": 5,
+            "user": 0
+          },
+          {
+            "col": 6,
+            "row": 9,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 3,
+            "user": 0
+          },
+          {
+            "col": 9,
+            "row": 6,
+            "user": 0
+          }
+        ],
+        "blocks": [
+          {
+            "col": 4,
+            "row": 5
+          }
+        ],
+        "currentPlayer": 0,
+        "status": "playing",
+        "winner": null
+      }
+    ],
+    "blocks": [
+      {
+        "col": 4,
+        "row": 5
+      },
+      {
+        "col": 5,
+        "row": 4
+      }
+    ]
+  }
+]

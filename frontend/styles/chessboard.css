@@ -39,7 +39,7 @@
 
 /* 障碍物（箭矢）样式 */
 .square.blocker {
-    background-color: #114514 ; /* 深灰色，确保在纯黑格子上也能看出一丁点区别 */
+    background-color: #114514 ; /*吉利的数字*/
     background-image: 
         radial-gradient(circle, #66ab6a 20%, transparent 11%),
         radial-gradient(circle, #66ab6a 20%, transparent 11%);
